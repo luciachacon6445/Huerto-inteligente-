@@ -29,4 +29,4 @@ Permite registrar monitorear riego y controlar el estado de las plantas.
  Clonar el repositorio:
 
 ```bash
-git clone https://github.com/luciachacon6445/Huerto-inteligente.git
+git clone https://github.com/luciachacon6445/Huerto-inteligente-.git
