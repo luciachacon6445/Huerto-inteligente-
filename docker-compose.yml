@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Base de Datos
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Memoria Cache
+  redis:
+    image: redis:alpine
+    ports:
+      - "6380:6379"
+
+  # Servidor de Inteligencia Artificial (FastAPI)
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      #Cambiamos "localhost" por el nombre de los contenedores ("db" y "redis")
+      - POSTGRES_URL=postgresql://postgres:postgres@db:5432/postgres
+      - REDIS_URL=redis://redis:6379/0
+      # Lee la llave desde tu archivo .env local
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+  # Página Web
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80" # El puerto web por defecto
+    volumes:
+      # Montamos tu index.html dentro del servidor web
+      - ./index.html:/usr/share/nginx/html/index.html
+
+volumes:
+  pgdata: # Para que los datos de Postgres no se borren si apagas Docker

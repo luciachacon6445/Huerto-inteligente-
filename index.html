@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Werto IA: Asistente Botánico</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-hover: #1b5e20;
+            --bg-color: #e8f5e9;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --text-muted: #666;
+        }
+
+        body { 
+            background: var(--bg-color); 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            margin: 0;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            color: var(--text-main);
+            height: 100vh;
+        }
+
+        /* Barra de navegación superior */
+        .navbar {
+            width: 100%;
+            background: var(--card-bg);
+            padding: 10px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar h2 { margin: 0; color: var(--primary); font-size: 1.4em; }
+
+        /* Contenedor del Botón de Google */
+        #auth-container { display: block; }
+        #user-profile { display: none; align-items: center; gap: 10px; }
+        #user-avatar { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--primary); }
+        .btn-logout { background: #ffebee; color: #c62828; border: none; padding: 5px 12px; border-radius: 15px; cursor: pointer; font-size: 0.85em; font-weight: bold;}
+
+        /* Contenedor del Chat Único */
+        .chat-container {
+            flex: 1;
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            margin-top: 65px; /* Altura navbar */
+            margin-bottom: 70px; /* Altura input */
+            display: flex; /* VISIBLE PARA PRUEBAS */
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        #chatBox { 
+            flex: 1;
+            overflow-y: auto; 
+            background: #f8fcf8; 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Estilo de los mensajes */
+        .msg-bot { color: var(--primary-hover); align-self: flex-start; max-width: 80%; }
+        .msg-user { align-self: flex-end; color: var(--text-main); background: #e8f5e9; padding: 10px; border-radius: 10px 10px 0 10px; max-width: 80%; display: flex; flex-direction: column; gap: 5px;}
+        .msg-bot-text { font-size: 0.95em; }
+
+        /* Área de previsualización del adjunto (en el input) */
+        #imageAttachmentPreview {
+            display: none;
+            padding: 10px;
+            background: #f1f8e9;
+            border-top: 1px solid #c8e6c9;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        #thumbnail {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* Área de Entrada (Abajo) */
+        .input-group { 
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 10px 15px;
+            box-sizing: border-box;
+            display: flex; 
+            gap: 10px; 
+            align-items: center;
+            border-top: 1px solid #c8e6c9;
+        }
+
+        #chatInput { 
+            flex: 1; 
+            padding: 12px 15px; 
+            border-radius: 20px; 
+            border: 1px solid #ccc; 
+            outline: none; 
+            font-family: inherit; 
+            font-size: 0.95em;
+        }
+        #chatInput:focus { border-color: var(--primary); }
+
+        .btn { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: background 0.3s; 
+            font-size: 0.9em;
+        }
+        .btn:hover { background: var(--primary-hover); }
+
+        /* Botón de Adjunto */
+        .btn-attach {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1.6em;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Imagen mostrada dentro del chat */
+        .chat-image {
+            max-width: 150px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h2>🌿 Werto IA: Tu Asistente Botánico</h2>
+    
+    <div id="auth-container">
+        <div id="g_id_onload"
+             data-client_id="748103385159-35pf9coaf4genqegtii74l4apnqbiom5.apps.googleusercontent.com"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="pill"
+             data-theme="outline"
+             data-text="signin_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
+    </div>
+
+    <div id="user-profile">
+        <img id="user-avatar" src="" alt="Avatar">
+        <span id="user-name" style="font-size: 0.9em; font-weight: bold;"></span>
+        <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+    </div>
+</div>
+
+<div class="chat-container" id="mainApp">
+    <div id="chatBox">
+        <div class="msg-bot"><b>Botánico:</b> ¡Hola! (Modo prueba activado). Adjunta una foto de tu planta o pregúntame lo que quieras.</div>
+    </div>
+
+    <div id="imageAttachmentPreview">
+        <img id="thumbnail" src="" alt="Thumbnail">
+        <div style="font-size: 0.85em; color: var(--text-muted);">Foto adjunta (se enviará con tu mensaje)</div>
+    </div>
+
+    <div class="input-group">
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <button class="btn-attach" onclick="document.getElementById('fileInput').click()">📎</button>
+        
+        <input type="text" id="chatInput" placeholder="Pregunta sobre tu planta...">
+        <button class="btn" onclick="enviarMensaje()">Enviar</button>
+    </div>
+</div>
+
+<script>
+    // --- 3. Google OAuth JavaScript Logic ---
+    
+    // Función auxiliar para leer el token de Google
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
+
+    // Callback cuando Google autentica con éxito
+    function handleCredentialResponse(response) {
+        const data = parseJwt(response.credential);
+        
+        // A. Ocultar Login / Mostrar Perfil y App
+        document.getElementById('auth-container').style.display = 'none';
+        document.getElementById('user-profile').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'flex';
+        
+        // B. Actualizar interfaz de usuario
+        document.getElementById('user-name').innerText = data.given_name || data.name;
+        document.getElementById('user-avatar').src = data.picture;
+        
+        // C. Mensaje de bienvenida personalizado del bot
+        chatBox.innerHTML = `<div class="msg-bot"><b>Botánico:</b> ¡Hola, ${data.given_name || data.name}! ¡Qué gusto verte! Adjunta una foto de tu planta o pregúntame lo que quieras.</div>`;
+    }
+
+    function cerrarSesion() {
+        // Recargar la página es la forma más limpia de cerrar sesión en JS básico
+        location.reload();
+    }
+
+    // --- 4. Chat Unificado JavaScript Logic ---
+
+    // Memoria para la foto ADJUNTA (no enviada aún)
+    let imagenAEnviarBase64 = null; 
+
+    const fileInput = document.getElementById('fileInput');
+    const chatInput = document.getElementById('chatInput');
+    const chatBox = document.getElementById('chatBox');
+    const attachmentPreview = document.getElementById('imageAttachmentPreview');
+    const thumbnail = document.getElementById('thumbnail');
+
+    // --- Lógica de Subida (Adjunto, no envío automático) ---
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Simular optimización (Canvas)
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const scale = 400 / img.width;
+                canvas.width = 400;
+                canvas.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Guardamos la foto LIMPIA en memoria, NO la enviamos aún
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
+                imagenAEnviarBase64 = compressedBase64.split(',')[1];
+                
+                // Mostramos el Thumbnail de adjunto en el área de input
+                thumbnail.src = compressedBase64;
+                attachmentPreview.style.display = 'flex';
+                
+                chatInput.focus(); // Volvemos al input
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // --- Lógica para Quitar Adjunto automáticamente después del envío ---
+    function quitarAdjunto() {
+        imagenAEnviarBase64 = null;
+        fileInput.value = ''; // Resetear input file
+        attachmentPreview.style.display = 'none';
+        thumbnail.src = '';
+    }
+
+    // --- Lógica de Envío Unificado (Texto + Imagen) ---
+    async function enviarMensaje() {
+        const textoUsuario = chatInput.value.trim();
+        // Si no hay texto ni imagen, no enviar
+        if (!textoUsuario && !imagenAEnviarBase64) return;
+
+        // A. Mostrar mensaje del Usuario *CON LA IMAGEN* en el chat
+        let contenidoUsuario = '';
+        if (imagenAEnviarBase64) {
+            // Ponemos la imagen primero
+            contenidoUsuario += `<img src="data:image/jpeg;base64,${imagenAEnviarBase64}" class="chat-image">`;
+        }
+        if (textoUsuario) {
+            contenidoUsuario += `<div>${textoUsuario}</div>`;
+        }
+        chatBox.innerHTML += `<div class="msg-user"><b>Tú:</b> ${contenidoUsuario}</div>`;
+        chatInput.value = ''; 
+        
+        // B. Mostrar indicador "Pensando..."
+        const idCarga = "cargando-" + Date.now();
+        chatBox.innerHTML += `<div id="${idCarga}" class="msg-bot"><b>Botánico:</b> <i>🌿 Pensando...</i></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Guardamos copia de la imagen y texto actuales para la petición
+        const imagenParaPeticion = imagenAEnviarBase64;
+        
+        // Quitar el adjunto automáticamente después de enviarlo (limpiar input)
+        quitarAdjunto();
+
+        // --- CONEXIÓN REAL AL BACKEND (Integrando Imagen y Texto) ---
+        try {
+            const pixelTransparente = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+            
+            const respuesta = await fetch("http://localhost:8000/preguntar/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    pregunta: textoUsuario ? textoUsuario : "(Analiza esta imagen, por favor)",
+                    imagen_base64: imagenParaPeticion ? imagenParaPeticion : pixelTransparente
+                })
+            });
+
+            const datos = await respuesta.json();
+
+            // Borramos "Pensando..."
+            document.getElementById(idCarga).remove(); 
+
+            // C. Mostrar la respuesta de Llama-4 en el chat
+            if(datos.respuesta_ia) {
+                chatBox.innerHTML += `
+                    <div class="msg-bot">
+                        <b>Botánico:</b>
+                        <div class="msg-bot-text">${datos.respuesta_ia}</div>
+                    </div>`;
+            } else {
+                chatBox.innerHTML += `<div class="msg-bot" style="color: red;"><b>Error:</b> ${datos.error}</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (error) {
+            document.getElementById(idCarga).remove();
+            chatBox.innerHTML += `<div class="msg-bot" style="color: red;"><b>Error:</b> ¿Está encendido el servidor FastAPI?</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }
+
+    // --- Soporte para Tecla Enter ---
+    chatInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            enviarMensaje();
+        }
+    });
+</script>
+
+</body>
+</html>
